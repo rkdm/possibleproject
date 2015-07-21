@@ -1,5 +1,3 @@
-setwd("C:/Users/Rachel/Documents/jobdocs/specific applications/data incubator app/possibleproject")
-
 ### download the data
 # download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip", 
 #               destfile = "activitydataset.zip")
@@ -8,8 +6,8 @@ setwd("C:/Users/Rachel/Documents/jobdocs/specific applications/data incubator ap
 datadir <- "UCI HAR Dataset/"
 dirs <- c("test","train")
 activitylabels <- read.table(paste(datadir,
-                    "activity_labels.txt",sep=""),
-                    col.names=c("actcode","actname"))
+                                   "activity_labels.txt",sep=""),
+                             col.names=c("actcode","actname"))
 
 for (d in dirs) {
     dataloc <- paste(datadir,d,"/",sep="")
@@ -29,33 +27,20 @@ for (d in dirs) {
 
 featurenames <- read.table(paste(datadir,"features.txt",sep=""),
                            row.names=1,stringsAsFactors=FALSE) 
-    ## use features.txt to create column names for variables
+## use features.txt to create column names for variables
 simplefeatnames <- gsub("[[:punct:]]","",
-            as.vector(unlist(featurenames)))
-    ## simplify data structure, and remove all the excess punctuation marks
-    ##      that don't play well with other things
+                        as.vector(unlist(featurenames)))
+## simplify data structure, and remove all the excess punctuation marks
+##      that don't play well with other things
 columnnames <- append(simplefeatnames,c("activitynum","subjectnum"))
-    ## create one vector, with feature names and the other two variables saved
+## create one vector, with feature names and the other two variables saved
 names(alldata) <- columnnames
-    ## set the column names of 'alldata' to be the 'columnnames' vector
+## set the column names of 'alldata' to be the 'columnnames' vector
 
-colMeans(alldata)
-byact <- split(alldata,alldata$activitynum)
-# str(byact)
-# summary(byact)
-bysubj <- split(alldata,alldata$subjectnum)
-# mapply(FUN=colMeans,byact)
-# mapply(FUN=colMeans,bysubj)
-# mapply(byact[[1]],FUN=hist)
-# res <- hist(byact[[1]][[1]])
-# res
+
 doublesplit <- split(alldata,list(alldata$activitynum,alldata$subjectnum))
-    ## result = list of 180 lists; each sublist is one activity for one subject
-    ##   each of the 180 lists has 563 values
-# mapply(doublesplit[[1]],FUN=hist)
-# names(doublesplit)
-# summary(doublesplit[['1.1']])
-# summary(doublesplit[['3.1']])
+## result = list of 180 lists; each sublist is one activity for one subject
+##   each of the 180 lists has 563 values
 
 ## names(doublesplit) are things like '1.1', 
 #       '3.1', etc.; first digit is activity, second is subject
@@ -65,35 +50,54 @@ names(doublesplit[grepl("^1",names(doublesplit))])
 names(doublesplit[grepl("25$",names(doublesplit))])
     ## get names that end with "25" [subject #25]
 
-## find the vars which are total "Mag"s
-magvars <- simplefeatnames[grepl("Mag",simplefeatnames)]
 testvars <- c("tBodyAccMag", "tGravityAccMag",
-                "tBodyAccJerkMag", "tBodyGyroMag",
-                "tBodyGyroJerkMag")
-fulltestvarnames <- simplefeatnames[grep(testvars[1],simplefeatnames)]
-    ## pull out all names that include tBodyAccMag
-## result:
-# > fulltestvarnames
+              "tBodyAccJerkMag", "tBodyGyroMag",
+              "tBodyGyroJerkMag")
+# example values for each type of measurement
 # [1] "tBodyAccMagmean"     "tBodyAccMagstd"      "tBodyAccMagmad"      "tBodyAccMagmax"      "tBodyAccMagmin"     
 # [6] "tBodyAccMagsma"      "tBodyAccMagenergy"   "tBodyAccMagiqr"      "tBodyAccMagentropy"  "tBodyAccMagarCoeff1"
 # [11] "tBodyAccMagarCoeff2" "tBodyAccMagarCoeff3" "tBodyAccMagarCoeff4"
 
-## how to pull out one subarray for fulltestvarnames[1]
-foo <- doublesplit[[1]][[fulltestvarnames[[1]]]]
-hist(foo,prob=TRUE)
-curve(dnorm(x,mean(foo),sd(foo)),add=TRUE,col='BLUE')
+## for now, just set specific variables to examine
+var1 <- "tBodyAccMagmean"
+var2 <- "tBodyAccJerkMagmean"
+var3 <- "tBodyGyroMagmean"
+var4 <- "tBodyGyroJerkMagmean"
 
+## choose one activity:  #2
+thisact <- names(doublesplit[grepl("^2",names(doublesplit))])
+## choose one subject:  #17
+thissubj <- names(doublesplit[grepl("17$",names(doublesplit))])
 
-## note to self: these arrays are not raw data, they are arrays of means, stddevs, etc.
-##  --can construct a fake distribution given these numbers, like a normal using
-#           mean, std, max, min
-dnorm(data,mean=mean,sd=sd) ## generate probability density function (PDF)
-curve(dnorm(x,mean,sd),add=TRUE,col='BLUE')  ## plot a real curve for the normal ftn
-    ## must include 'x' no matter what your data/variables are -- it's not a 
-    ##      real variable, it's just the placeholder it uses to figure out what to draw
+currentpars <- par()
+par(mfrow=c(2,3),oma=c(0,0,2.5,0))
 
+############
+## plot all activities for one subject
+for (s in 1:length(thissubj)) {
+    thisactivity <- doublesplit[[thissubj[s]]][[var1]]
+    thisactlabel <- levels(activitylabels$actname)[s]
+    hist(thisactivity,prob=TRUE,breaks=30,
+         cex.axis=1.5,cex.lab=1.5,cex.main=1.5,
+         xlab=thisactlabel,main=var1)
+    curve(dnorm(x,mean(thisactivity),sd(thisactivity)),add=TRUE,col="red")
+}
+mtext(text="Mean of the Total Magnitude of Body Acceleration for each Activity for Subject #17",
+      side=3, outer=TRUE)
+## plot saved as 'subj17activities.png'
 
-#######  figure out how to pull out distributions/histograms of each variable for each activity
-#######     --look at total 'Mag' variables
-#######     --poss. also compare diff. individuals or look at distr for one indiv.
-
+par(mfrow=c(3,3),oma=c(0,0,2.5,0))
+############
+## plot all subjects for one activity
+for (a in 1:9) {
+    thissubject <- doublesplit[[thisact[a]]][[var3]]
+    thissubjlabel <- paste("Subject #",a,sep="")
+    hist(thissubject,prob=TRUE,breaks=30,
+         cex.axis=1.5,cex.lab=1.5,cex.main=1.5,
+         xlab=thissubjlabel,main=var3)
+    curve(dnorm(x,mean(thissubject),sd(thissubject)),add=TRUE,col="red")
+}
+mtext(text="Mean of the Total Magnitude of Angular Velocity for Subjects 1 - 9 for SITTING",
+      side=3, outer=TRUE)
+## plot saved as 'sittingsubj1thru9.png'
+par(currentpars)
